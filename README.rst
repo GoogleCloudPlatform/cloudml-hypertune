@@ -9,7 +9,7 @@ Metric Reporting Python Package for CloudML Hypertune
 Prerequisites
 -------------
 
--  Google CloudML Engine `Overview <https://cloud.google.com/ml-engine/docs>`__.
+-  Google CloudML Engine `Overview <https://cloud.google.com/ml-engine/>`__.
 
 -  Google CloudML Engine `Hyperparameter Tuning
    Overview <https://cloud.google.com/ml-engine/docs/tensorflow/hyperparameter-tuning-overview>`__.

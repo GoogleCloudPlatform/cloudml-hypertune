@@ -25,7 +25,7 @@ long_description = open('README.rst', 'r', encoding='utf-8').read()
 
 setup(
     name='cloudml-hypertune',
-    version='0.1.0.dev2',
+    version='0.1.0.dev3',
 
     description='A library to report Google CloudML Engine HyperTune metrics.',
     long_description=long_description,

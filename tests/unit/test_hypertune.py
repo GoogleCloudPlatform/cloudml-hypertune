@@ -50,7 +50,7 @@ class TestHypertune(unittest.TestCase):
             global_step=1000)
         with open(os.path.join(self.test_dir, 'metric.output')) as metric_output:
             metric = json.loads(metric_output.readlines()[-1].strip())
-            self.assertAlmostEqual('0.987', metric['my_metric_tag'])
+            self.assertAlmostEqual(0.987, float(metric['my_metric_tag']))
             self.assertEqual('1', metric['trial'])
             self.assertEqual('1000', metric['global_step'])
 
@@ -69,11 +69,11 @@ class TestHypertune(unittest.TestCase):
         with open(os.path.join(self.test_dir, 'metric.output')) as metric_output:
             metric_content = metric_output.readlines()
             metric = json.loads(metric_content[0].strip())
-            self.assertAlmostEqual('10.0', metric['my_metric_tag'])
+            self.assertAlmostEqual(10.0, float(metric['my_metric_tag']))
             self.assertEqual('1', metric['trial'])
             self.assertEqual('100', metric['global_step'])
             metric = json.loads(metric_content[-1].strip())
-            self.assertAlmostEqual('19.9', metric['my_metric_tag'])
+            self.assertAlmostEqual(19.9, float(metric['my_metric_tag']))
             self.assertEqual('1', metric['trial'])
             self.assertEqual('199', metric['global_step'])
 

@@ -22,52 +22,52 @@ import os
 import time
 
 _DEFAULT_HYPERPARAMETER_METRIC_TAG = 'training/hptuning/metric'
-_DEFAULT_METRIC_PATH = '/var/hypertune/output.metrics'
-# TODO(wenzhel): consider to make it configurable
+_DEFAULT_METRIC_PATH = '/tmp/hypertune/output.metrics'
+# TODO(0olwzo0): consider to make it configurable
 _MAX_NUM_METRIC_ENTRIES_TO_PRESERVE = 100
 
 
 class HyperTune(object):
-  """Main class for HyperTune."""
+    """Main class for HyperTune."""
 
-  def __init__(self):
-    """Constructor."""
-    self.metric_path = os.environ.get('CLOUD_ML_HP_METRIC_FILE',
-                                      _DEFAULT_METRIC_PATH)
-    if not os.path.exists(os.path.dirname(self.metric_path)):
-      os.makedirs(os.path.dirname(self.metric_path))
+    def __init__(self):
+        """Constructor."""
+        self.metric_path = os.environ.get('CLOUD_ML_HP_METRIC_FILE',
+                                          _DEFAULT_METRIC_PATH)
+        if not os.path.exists(os.path.dirname(self.metric_path)):
+            os.makedirs(os.path.dirname(self.metric_path))
 
-    self.trial_id = os.environ.get('CLOUD_ML_TRIAL_ID', 0)
-    self.metrics_queue = collections.deque(
-        maxlen=_MAX_NUM_METRIC_ENTRIES_TO_PRESERVE)
+        self.trial_id = os.environ.get('CLOUD_ML_TRIAL_ID', 0)
+        self.metrics_queue = collections.deque(
+            maxlen=_MAX_NUM_METRIC_ENTRIES_TO_PRESERVE)
 
-  def _dump_metrics_to_file(self):
-    with open(self.metric_path, 'w') as metric_file:
-      for metric in self.metrics_queue:
-        metric_file.write(json.dumps(metric, sort_keys=True) + '\n')
+    def _dump_metrics_to_file(self):
+        with open(self.metric_path, 'w') as metric_file:
+            for metric in self.metrics_queue:
+                metric_file.write(json.dumps(metric, sort_keys=True) + '\n')
 
-  def report_hyperparameter_tuning_metric(self,
-                                          hyperparameter_metric_tag,
-                                          metric_value,
-                                          global_step=None):
-    """Method to report hyperparameter tuning metric.
+    def report_hyperparameter_tuning_metric(self,
+                                            hyperparameter_metric_tag,
+                                            metric_value,
+                                            global_step=None):
+        """Method to report hyperparameter tuning metric.
 
-    Args:
-      hyperparameter_metric_tag: The hyperparameter metric name this metric
-        value is associated with. Should keep consistent with the tag
-        specified in HyperparameterSpec.
-      metric_value: float, the values for the hyperparameter metric to report.
-      global_step: int, the global step this metric value is associated with.
-    """
-    metric_value = float(metric_value)
-    metric_tag = _DEFAULT_HYPERPARAMETER_METRIC_TAG
-    if hyperparameter_metric_tag:
-      metric_tag = hyperparameter_metric_tag
-    metric_body = {
-        'timestamp': time.time(),
-        'trial': str(self.trial_id),
-        metric_tag: str(metric_value),
-        'global_step': str(int(global_step) if global_step else 0)
-    }
-    self.metrics_queue.append(metric_body)
-    self._dump_metrics_to_file()
+        Args:
+          hyperparameter_metric_tag: The hyperparameter metric name this metric
+            value is associated with. Should keep consistent with the tag
+            specified in HyperparameterSpec.
+          metric_value: float, the values for the hyperparameter metric to report.
+          global_step: int, the global step this metric value is associated with.
+        """
+        metric_value = float(metric_value)
+        metric_tag = _DEFAULT_HYPERPARAMETER_METRIC_TAG
+        if hyperparameter_metric_tag:
+            metric_tag = hyperparameter_metric_tag
+        metric_body = {
+            'timestamp': time.time(),
+            'trial': str(self.trial_id),
+            metric_tag: str(metric_value),
+            'global_step': str(int(global_step) if global_step else 0)
+        }
+        self.metrics_queue.append(metric_body)
+        self._dump_metrics_to_file()

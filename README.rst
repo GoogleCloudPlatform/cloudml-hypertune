@@ -35,7 +35,7 @@ Usage
         metric_value=0.987,
         global_step=1000)
 
-By default, the metric entries will be stored to ``/var/hypertune/outout.metric`` in json format:
+By default, the metric entries will be stored to ``/tmp/hypertune/outout.metric`` in json format:
 
 ::
 

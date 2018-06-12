@@ -25,7 +25,7 @@ long_description = open('README.rst', 'r', encoding='utf-8').read()
 
 setup(
     name='cloudml-hypertune',
-    version='0.1.0.dev3',
+    version='0.1.0.dev4',
 
     description='A library to report Google CloudML Engine HyperTune metrics.',
     long_description=long_description,
@@ -33,7 +33,7 @@ setup(
     author='Google CloudML Engine',
     author_email='cloudml-feedback@google.com',
     license='Apache Software License',
-    url='http://pypi.python.org/pypi/hypertune/',
+    url='http://github.com/GoogleCloudPlatform/cloudml-hypertune',
 
     classifiers=[
         'Development Status :: 3 - Alpha',

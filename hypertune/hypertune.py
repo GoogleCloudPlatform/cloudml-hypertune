@@ -49,7 +49,8 @@ class HyperTune(object):
     def report_hyperparameter_tuning_metric(self,
                                             hyperparameter_metric_tag,
                                             metric_value,
-                                            global_step=None):
+                                            global_step=None,
+                                            checkpoint_path=''):
         """Method to report hyperparameter tuning metric.
 
         Args:
@@ -58,6 +59,7 @@ class HyperTune(object):
             specified in HyperparameterSpec.
           metric_value: float, the values for the hyperparameter metric to report.
           global_step: int, the global step this metric value is associated with.
+          checkpoint_path: The checkpoint path which can be used to warmstart from.
         """
         metric_value = float(metric_value)
         metric_tag = _DEFAULT_HYPERPARAMETER_METRIC_TAG
@@ -67,7 +69,8 @@ class HyperTune(object):
             'timestamp': time.time(),
             'trial': str(self.trial_id),
             metric_tag: str(metric_value),
-            'global_step': str(int(global_step) if global_step else 0)
+            'global_step': str(int(global_step) if global_step else 0),
+            'checkpoint_path': checkpoint_path
         }
         self.metrics_queue.append(metric_body)
         self._dump_metrics_to_file()

@@ -54,6 +54,23 @@ class TestHypertune(unittest.TestCase):
             self.assertEqual('1', metric['trial'])
             self.assertEqual('1000', metric['global_step'])
 
+    def test_report_metric_with_ckpt(self):
+        """Test writing 1 metric record with checkpoint."""
+        os.environ['CLOUD_ML_HP_METRIC_FILE'] = os.path.join(self.test_dir, 'metric.output')
+        os.environ['CLOUD_ML_TRIAL_ID'] = '1'
+        hpt = HyperTune()
+        hpt.report_hyperparameter_tuning_metric(
+            hyperparameter_metric_tag='my_metric_tag',
+            metric_value=0.987,
+            global_step=1000,
+            checkpoint_path='gs://my_bucket/ckpt/')
+        with open(os.path.join(self.test_dir, 'metric.output')) as metric_output:
+          metric = json.loads(metric_output.readlines()[-1].strip())
+          self.assertAlmostEqual(0.987, float(metric['my_metric_tag']))
+          self.assertEqual('1', metric['trial'])
+          self.assertEqual('1000', metric['global_step'])
+          self.assertEqual('gs://my_bucket/ckpt/', metric['checkpoint_path'])
+
     def test_report_metric_circular(self):
         """ Test that the metric file will only store most recent 100 records.
 
@@ -79,4 +96,3 @@ class TestHypertune(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-        

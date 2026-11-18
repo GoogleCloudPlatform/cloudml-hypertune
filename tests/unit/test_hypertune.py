@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit Tests for hypertune.
-
-"""
+"""Unit Tests for hypertune."""
 
 import json
 import os
@@ -26,21 +24,28 @@ from hypertune import HyperTune
 
 
 class TestHypertune(unittest.TestCase):
-    """ TestHypertune class.
+    """TestHypertune class."""
 
-    """
     def setUp(self):
-        # Create a temporary directory
         self.test_dir = tempfile.mkdtemp()
+        self._orig_metric_env = os.environ.get('CLOUD_ML_HP_METRIC_FILE')
+        self._orig_trial_env = os.environ.get('CLOUD_ML_TRIAL_ID')
+        self._cleanup_dirs = [self.test_dir]
 
     def tearDown(self):
-        # Remove the directory after the test
-        shutil.rmtree(self.test_dir)
+        if self._orig_metric_env is None:
+            os.environ.pop('CLOUD_ML_HP_METRIC_FILE', None)
+        else:
+            os.environ['CLOUD_ML_HP_METRIC_FILE'] = self._orig_metric_env
+        if self._orig_trial_env is None:
+            os.environ.pop('CLOUD_ML_TRIAL_ID', None)
+        else:
+            os.environ['CLOUD_ML_TRIAL_ID'] = self._orig_trial_env
+        for d in self._cleanup_dirs:
+            shutil.rmtree(d, ignore_errors=True)
 
     def test_report_metric(self):
-        """ Test writing 1 metric record.
-
-        """
+        """Test writing 1 metric record."""
         os.environ['CLOUD_ML_HP_METRIC_FILE'] = os.path.join(self.test_dir, 'metric.output')
         os.environ['CLOUD_ML_TRIAL_ID'] = '1'
         hpt = HyperTune()
@@ -65,16 +70,14 @@ class TestHypertune(unittest.TestCase):
             global_step=1000,
             checkpoint_path='gs://my_bucket/ckpt/')
         with open(os.path.join(self.test_dir, 'metric.output')) as metric_output:
-          metric = json.loads(metric_output.readlines()[-1].strip())
-          self.assertAlmostEqual(0.987, float(metric['my_metric_tag']))
-          self.assertEqual('1', metric['trial'])
-          self.assertEqual('1000', metric['global_step'])
-          self.assertEqual('gs://my_bucket/ckpt/', metric['checkpoint_path'])
+            metric = json.loads(metric_output.readlines()[-1].strip())
+            self.assertAlmostEqual(0.987, float(metric['my_metric_tag']))
+            self.assertEqual('1', metric['trial'])
+            self.assertEqual('1000', metric['global_step'])
+            self.assertEqual('gs://my_bucket/ckpt/', metric['checkpoint_path'])
 
     def test_report_metric_circular(self):
-        """ Test that the metric file will only store most recent 100 records.
-
-        """
+        """Test that the metric file will only store most recent 100 records."""
         os.environ['CLOUD_ML_HP_METRIC_FILE'] = os.path.join(self.test_dir, 'metric.output')
         os.environ['CLOUD_ML_TRIAL_ID'] = '1'
         hpt = HyperTune()
@@ -93,6 +96,54 @@ class TestHypertune(unittest.TestCase):
             self.assertAlmostEqual(19.9, float(metric['my_metric_tag']))
             self.assertEqual('1', metric['trial'])
             self.assertEqual('199', metric['global_step'])
+
+    def test_default_path_uses_unique_private_tempdir(self):
+        """Default path avoids predictable /tmp/hypertune symlink attacks."""
+        os.environ.pop('CLOUD_ML_HP_METRIC_FILE', None)
+        hpt = HyperTune()
+        parent_dir = os.path.dirname(hpt.metric_path)
+        self._cleanup_dirs.append(parent_dir)
+        self.assertNotEqual('/tmp/hypertune', parent_dir)
+        self.assertEqual('output.metrics', os.path.basename(hpt.metric_path))
+        hpt.report_hyperparameter_tuning_metric('loss', 0.25, global_step=5)
+        with open(hpt.metric_path) as metric_output:
+            metric = json.loads(metric_output.read().strip())
+        self.assertAlmostEqual(0.25, float(metric['loss']))
+
+    def test_rejects_symlink_target_file(self):
+        """Refuses to clobber a victim file through a symlinked metric path."""
+        victim_file = os.path.join(self.test_dir, 'victim_bashrc')
+        with open(victim_file, 'w') as f:
+            f.write('ORIGINAL_SENSITIVE_CONTENT')
+        symlink_metric = os.path.join(self.test_dir, 'output.metrics')
+        os.symlink(victim_file, symlink_metric)
+
+        os.environ['CLOUD_ML_HP_METRIC_FILE'] = symlink_metric
+        hpt = HyperTune()
+        with self.assertRaises(OSError):
+            hpt.report_hyperparameter_tuning_metric('m', 1.0)
+        with open(victim_file) as f:
+            self.assertEqual('ORIGINAL_SENSITIVE_CONTENT', f.read())
+
+    def test_rejects_symlink_parent_directory(self):
+        """Refuses parent-directory symlink bypass (/tmp/hypertune -> victim_dir)."""
+        victim_dir = os.path.join(self.test_dir, 'victim_dir')
+        os.makedirs(victim_dir)
+        victim_metrics = os.path.join(victim_dir, 'output.metrics')
+        with open(victim_metrics, 'w') as f:
+            f.write('VICTIM_METRICS_CONTENT')
+
+        symlink_parent = os.path.join(self.test_dir, 'symlink_hypertune')
+        os.symlink(victim_dir, symlink_parent)
+        os.environ['CLOUD_ML_HP_METRIC_FILE'] = os.path.join(
+            symlink_parent, 'output.metrics'
+        )
+
+        with self.assertRaises(OSError):
+            HyperTune()
+        with open(victim_metrics) as f:
+            self.assertEqual('VICTIM_METRICS_CONTENT', f.read())
+
 
 if __name__ == '__main__':
     unittest.main()

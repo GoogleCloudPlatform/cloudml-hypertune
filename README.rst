@@ -35,7 +35,7 @@ Usage
         metric_value=0.987,
         global_step=1000)
 
-By default, the metric entries will be stored to ``/tmp/hypertune/output.metrics`` in json format:
+By default (when ``CLOUD_ML_HP_METRIC_FILE`` is not set), the metric entries will be stored to ``output.metrics`` inside a per-process temporary directory (accessible via ``hpt.metric_path``) in json format:
 
 ::
 
